@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>داشبورد قیمت نوبیتکس</title>
+  <link rel="icon" href="data:image/svg+xml,
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+<text x='50%' y='55%' font-size='100' text-anchor='middle' dominant-baseline='middle'>₿</text>
+</svg>">
+
+  <style>
+    body{
+      margin:0;
+      font-family:Tahoma,sans-serif;
+      direction:rtl;
+      background:#f4f6f8;
+      color:#222;
+      padding:24px;
+    }
+    h1{
+      margin-bottom:24px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+      gap:16px;
+    }
+    .card{
+      background:#fff;
+      border-radius:14px;
+      padding:18px;
+      box-shadow:0 4px 18px rgba(0,0,0,.08);
+    }
+    .card h2{
+      margin-top:0;
+      font-size:20px;
+    }
+    .row{
+      display:flex;
+      justify-content:space-between;
+      padding:10px 0;
+      border-bottom:1px solid #eee;
+    }
+    .row:last-child{
+      border-bottom:none;
+    }
+    .label{
+      font-weight:bold;
+    }
+    .value{
+      font-weight:bold;
+      direction:ltr;
+    }
+    .big{
+      font-size:20px;
+    }
+    .small{
+      margin-top:10px;
+      color:#777;
+      font-size:12px;
+      line-height:1.8;
+    }
+    .error{
+      background:#ffebee;
+      color:#b71c1c;
+      padding:10px;
+      border-radius:10px;
+      margin-top:16px;
+      white-space:pre-line;
+    }
+    .ok{
+      background:#e8f5e9;
+      color:#1b5e20;
+      padding:10px;
+      border-radius:10px;
+      margin-top:16px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>داشبورد قیمت نوبیتکس</h1>
+
+  <div class="grid">
+    <div class="card">
+      <h2>سایت نوبیتکس (<a href="https://nobitex.ir/panel/exchange/usdt-irt/" target="_blank">nobitex.ir</a>)</h2>
+      <div class="row">
+        <div class="label big">تتر به تومان (USDT / IRT)</div>
+        <div class="value big" id="usdtirt1-last">...</div>
+      </div>
+      <div class="row">
+        <div class="label big">بیت کوین به تتر (BTC / USDT)</div>
+        <div class="value big" id="btcusdt1-last">...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>سایت بیت پین (<a href="https://bitpin.ir/trade/USDT_IRT/?side=buy&tab=spot" target="_blank">bitpin.ir</a>)</h2>
+      <div class="row">
+        <div class="label big">تتر به تومان (USDT / IRT)</div>
+        <div class="value big" id="usdtirt2-last">...</div>
+      </div>
+      <div class="row">
+        <div class="label big">بیت کوین به تتر (BTC / USDT)</div>
+        <div class="value big" id="btcusdt2-last">...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="status" class="ok">در حال دریافت داده...</div>
+
+  <script>
+    function num(x){
+      return Number(String(x).replace(/,/g,''));
+    }
+
+    function fmt(x, digits=0){
+      if (x === null || x === undefined || Number.isNaN(x)) return '---';
+      return Number(x).toLocaleString('en-US', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    async function getOrderbook(symbol){
+      const url = `https://apiv2.nobitex.ir/v3/orderbook/${symbol}`;
+      const res = await fetch(url, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if(!res.ok){
+        throw new Error(`HTTP ${res.status} - ${url}`);
+      }
+      const data = await res.json();
+
+      const last = num(data.lastTradePrice);
+      const bestBid = data.bids && data.bids.length ? num(data.bids[0][0]) : null;
+      const bestAsk = data.asks && data.asks.length ? num(data.asks[0][0]) : null;
+
+      return {
+        symbol,
+        last,
+        bestBid,
+        bestAsk,
+        spread: (bestAsk !== null && bestBid !== null) ? (bestAsk - bestBid) : null,
+        raw: data
+      };
+    }
+
+async function getBitpinPrice(symbol){
+  const url = `https://api.bitpin.ir/api/v1/mkt/tickers/`;
+
+  const res = await fetch(url, {
+    headers: { 'Accept': 'application/json' }
+  });
+
+  if(!res.ok){
+    throw new Error(`HTTP ${res.status} - ${url}`);
+  }
+
+  const data = await res.json();
+
+  const market = data.find(m => m.symbol === symbol);
+
+  if(!market){
+    throw new Error(`Bitpin market not found: ${symbol}`);
+  }
+
+  return num(market.price);
+}
+
+function setText(id, value){
+      document.getElementById(id).textContent = value;
+    }
+
+async function refresh(){
+  const status = document.getElementById('status');
+
+  const results = await Promise.allSettled([
+    getOrderbook('USDTIRT'),
+    getOrderbook('BTCUSDT'),
+    getBitpinPrice('USDT_IRT'),
+    getBitpinPrice('BTC_USDT')
+  ]);
+
+  const [
+    usdtirt1,
+    btcusdt1,
+    usdtirt2,
+    btcusdt2
+  ] = results;
+
+  // نوبیتکس
+  if (usdtirt1.status === 'fulfilled') {
+    setText('usdtirt1-last', fmt(usdtirt1.value.last / 10));
+  } else {
+    setText('usdtirt1-last', '---');
+  }
+
+  if (btcusdt1.status === 'fulfilled') {
+    setText('btcusdt1-last', fmt(btcusdt1.value.last, 0));
+  } else {
+    setText('btcusdt1-last', '---');
+  }
+
+  if (usdtirt2.status === 'fulfilled') {
+    setText('usdtirt2-last', fmt(usdtirt2.value));
+  } else {
+    setText('usdtirt2-last', '---');
+  }
+
+  if (btcusdt2.status === 'fulfilled') {
+    setText('btcusdt2-last', fmt(btcusdt2.value));
+  } else {
+    setText('btcusdt2-last', '---');
+  }
+
+  // وضعیت کلی
+  const hasError = results.some(r => r.status === 'rejected');
+
+  status.className = hasError ? 'error' : 'ok';
+  status.textContent = hasError
+    ? 'برخی داده‌ها دریافت نشدند، ولی بقیه نمایش داده شده‌اند.'
+    : 'داده‌ها با موفقیت دریافت شدند. بروزرسانی خودکار هر 8 ثانیه انجام می‌شود.';
+}
+
+    refresh();
+    setInterval(refresh, 8000);
+  </script>
+</body>
+</html>
