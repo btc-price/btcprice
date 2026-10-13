@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>داشبورد قیمت نوبیتکس</title>
+  <title>داشبورد قیمت رمزارزها</title>
   <link rel="icon" href="data:image/svg+xml,
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
 <text x='50%' y='55%' font-size='100' text-anchor='middle' dominant-baseline='middle'>₿</text>
@@ -81,6 +81,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
     }
     .card h2 a {
       color: var(--accent);
@@ -146,6 +147,48 @@
       margin-left: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* بخش لینک‌های سریع */
+    .quick-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .quick-links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 13px;
+      transition: all .2s;
+    }
+    .quick-links a:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .quick-links a::before {
+      content: '🔗';
+      font-size: 12px;
+    }
+    .open-all-btn {
+      font-size:12px;
+      padding:6px 12px;
+      background:var(--accent);
+      color:#fff;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      font-family:inherit;
+      transition: opacity .2s;
+    }
+    .open-all-btn:hover { opacity: .85; }
   </style>
 </head>
 <body>
@@ -202,12 +245,31 @@
     </div>
   </div>
 
+  <!-- بخش لینک‌های سریع -->
+  <div class="card" style="margin-top: 16px;">
+    <h2>
+      <span>لینک‌های سریع</span>
+      <button id="openAllBtn" class="open-all-btn">باز کردن همه</button>
+    </h2>
+    <div id="quickLinks" class="quick-links"></div>
+  </div>
+
   <div id="status" class="ok">در حال دریافت داده...</div>
   <div class="last-update" id="lastUpdate"></div>
 
   <script>
     const REFRESH_INTERVAL = 8000;
     const prevValues = {};
+
+    // ===== لیست لینک‌های سریع =====
+    // برای اضافه کردن لینک جدید، فقط یک آیتم به این آرایه اضافه کنید:
+    // { title: 'نام سایت', url: 'https://example.com/' },
+    const quickLinks = [
+      { title: 'ایتا', url: 'https://web.eitaa.com/' },
+      { title: 'روبیکا', url: 'https://web.rubika.ir/' },
+      { title: 'بله', url: 'https://web.bale.ai/chat' },
+      { title: 'Tandfonline', url: 'https://rp.tandfonline.com/dashboard/' },
+    ];
 
     function num(x){
       return Number(String(x).replace(/,/g,''));
@@ -348,6 +410,27 @@
       document.getElementById('lastUpdate').textContent = `آخرین به‌روزرسانی: ${timeStr}`;
     }
 
+    // ===== رندر لینک‌های سریع =====
+    function renderQuickLinks() {
+      const container = document.getElementById('quickLinks');
+      container.innerHTML = '';
+      quickLinks.forEach(link => {
+        const a = document.createElement('a');
+        a.href = link.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = link.title;
+        container.appendChild(a);
+      });
+    }
+
+    // ===== دکمه باز کردن همه =====
+    document.getElementById('openAllBtn').addEventListener('click', () => {
+      quickLinks.forEach(link => {
+        window.open(link.url, '_blank', 'noopener,noreferrer');
+      });
+    });
+
     // دکمه به‌روزرسانی دستی
     document.getElementById('refreshBtn').addEventListener('click', refresh);
 
@@ -366,6 +449,7 @@
     }
 
     // شروع
+    renderQuickLinks();
     refresh();
     setInterval(refresh, REFRESH_INTERVAL);
   </script>
